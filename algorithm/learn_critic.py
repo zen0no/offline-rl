@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     seed = int(args.seed)
     
-    wandb.init(project='Bellman-Wasserstein(ICLR)',
+    wandb.init(project='bellman-wasserstein-distance',
         name=f"{args.task}_{args.env}",
         entity='rock-and-roll',
         reinit=True,
