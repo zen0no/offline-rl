@@ -30,6 +30,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--alpha", default=1)
     parser.add_argument("--normalize", default=True)
+    parser.add_argument("--models_path", default=".")
     args = parser.parse_args()
 
     seed = int(args.seed)
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     )
     wandb.run.save()
 
-    models_path = f"../../NeurIPS2023/OT_RL/TD3_BC/saved_models/{args.env}/"
+    models_path = os.path.join(args.models_path, args.env)
 
     env = gym.make(args.env)
     env.seed(seed)
