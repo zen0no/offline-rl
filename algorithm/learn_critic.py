@@ -37,8 +37,6 @@ if __name__ == "__main__":
     
     wandb.init(project='bellman-wasserstein-distance',
         name=f"{args.task}_{args.env}",
-        entity='rock-and-roll',
-        reinit=True,
     )
     wandb.run.save()
 
