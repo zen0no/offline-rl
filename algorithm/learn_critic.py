@@ -2,52 +2,85 @@ import os
 import numpy as np
 import torch
 import gym
-import argparse
 import d4rl
 import utils
 import bellman_wasserstein as Distance
 import wandb
 
-if __name__ == "__main__":
+from config.base import WandbConfig
+from dataclasses import dataclass, field
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--device_num", default="1")                # Cuda device
-    parser.add_argument("--task", default="Learn_SARSA_Critic_Value") 
-    parser.add_argument("--env", default="halfcheetah-medium-v2")   # OpenAI gym environment name
-    parser.add_argument("--seed", default=0, type=int)              # Sets Gym, PyTorch and Numpy seeds
-    parser.add_argument("--eval_freq", default=10000, type=int)     # How often (time steps) we evaluates
-    parser.add_argument("--timesteps", default=100001, type=int)   # Num of time steps to update
-    parser.add_argument("--distance_freq", default = 1e4, type=int)
+import pyrallis
 
-    parser.add_argument("--expl_noise", default=0.1)                # Std of Gaussian exploration noise
-    parser.add_argument("--batch_size", default=256, type=int)      # Batch size for both actor and critic
-    parser.add_argument("--hidden_dim", default=1024, type=int)     # Hidden layer size for both actor and critic
-    parser.add_argument("--discount", default=0.99)                 # Discount factor
-    parser.add_argument("--tau", default=0.005)                     # Target network update rate
-    parser.add_argument("--policy_noise", default=0.2)              # Noise added to target policy during critic update
-    parser.add_argument("--noise_clip", default=0.5)                # Range to clip target policy noise
-    parser.add_argument("--policy_freq", default=2, type=int)       # Frequency of delayed policy updates
+@dataclass
+class RunConfig:
+    device: str = 'cuda'
+    device_num: int = 1
 
-    parser.add_argument("--alpha", default=1)
-    parser.add_argument("--normalize", default=True)
-    parser.add_argument("--models_path", default=".")
-    args = parser.parse_args()
+    task: str
+    checkpoint_path: str = './checkpoint'
+    env: str = 'halfcheetah-medium-expert-v2'
+    seed: int = 0
+    eval_freq: int = 10000
+    timesteps: int = 1000000
 
-    seed = int(args.seed)
+    distance_freq: int = 10000    
     
-    wandb.init(project='bellman-wasserstein-distance',
-        name=f"{args.task}_{args.env}",
-    )
-    wandb.run.save()
+    expl_noise: float = 0.1
+    batch_size: int = 256
+    hidden_dim: int = 1024
+    discount: float = 0.99
+    tau: float = 0.005
+    policy_noise: float = 0.2
+    noise_clip: float = 0.5
+    policy_freq: int = 2
 
-    models_path = os.path.join(args.models_path, args.env)
+    alpha: float = 1.
 
-    env = gym.make(args.env)
-    env.seed(seed)
-    env.action_space.seed(seed)
+    normalize: bool = True
+
+@dataclass
+class TrainConfig:
+    run = field(default_factory=RunConfig)
+    wandb_cfg = field(defailt_factroy=WandbConfig)
+
+
+
+
+def make_env(cfg: RunConfig):
+    env = gym.make(cfg.env)
+    env.seed(cfg.seed)
+
+    return env
+
+
+def set_seed(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
+
+def wandb_init(cfg):
+    wandb.init(
+        project=cfg.run.project,
+        name=f'{cfg.task}_{cfg.name}'
+    )
+
+
+def run(cfg: RunConfig): 
+
+    env = make_env(cfg)
+    set_seed(cfg.seed)
+
+
+
+    models_path = os.path.join(
+        cfg.run.checkpoint_path,
+        cfg.run.env
+        )
+
+    if not os.path.exists(models_path):
+        print(f"Didn't find specified directory. Creating {models_path}")
+        os.makedirs(models_path)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0] 
     max_action = float(env.action_space.high[0])
@@ -55,52 +88,54 @@ if __name__ == "__main__":
     kwargs = {
         "state_dim": state_dim,
         "action_dim": action_dim,
-        "hidden_dim": args.hidden_dim,
-        "batch_size": args.batch_size,
+        "hidden_dim": cfg.run.hidden_dim,
+        "batch_size": cfg.run.batch_size,
         "max_action": max_action,
-        "max_steps": args.timesteps,
-        "discount": args.discount,
-        "tau": args.tau,
-        "alpha": args.alpha
+        "max_steps": cfg.run.timesteps,
+        "discount": cfg.run.discount,
+        "tau": cfg.run.tau,
+        "alpha": cfg.run.alpha
     }
-    
+
     method = Distance.BellmanWasserstein(**kwargs)
 
     replay_buffer = utils.SarsaReplayBuffer(state_dim, action_dim, max_size=int(10000000))
     sarsa_dataset = utils.qlearning_dataset(env)
     replay_buffer.convert_D4RL(sarsa_dataset)
-    if args.normalize:
+
+    if cfg.normalize:
         mean,std = replay_buffer.normalize_states() 
     else:
         mean,std = 0,1
 
-    for t in range(int(args.timesteps)):
+    checkpoint_count = 0
+    checkpoint_step = 2
+    
+    log_step = True
+
+    for t in range(int(run.timesteps) + 1):
         log_dict = method.update_critic(replay_buffer)
         wandb.log(log_dict, step=t)
         log_dict = method.update_value(replay_buffer)
         wandb.log(log_dict, step=t)
         torch.cuda.empty_cache()
-        
-        if t == 1000:
-            torch.save(method.critic.state_dict(), models_path + "Sarsa_Critic_1000.pt")
-            torch.save(method.value.state_dict(), models_path + "Sarsa_Value_1000.pt")
-            torch.save(method.critic_optimizer.state_dict(), models_path + "Sarsa_Critic_optimizer_1000.pt")
-            torch.save(method.value_optimizer.state_dict(), models_path + "Sarsa_Value_optimizer_1000.pt")
-        elif t == 10000:
-            torch.save(method.critic.state_dict(), models_path + "Sarsa_Critic_10000.pt")
-            torch.save(method.value.state_dict(), models_path + "Sarsa_Value_10000.pt")
-            torch.save(method.critic_optimizer.state_dict(), models_path + "Sarsa_Critic_optimizer_10000.pt")
-            torch.save(method.value_optimizer.state_dict(), models_path + "Sarsa_Value_optimizer_10000.pt")
-        elif t == 100000:
-            torch.save(method.critic.state_dict(), models_path + "Sarsa_Critic_100000.pt")
-            torch.save(method.value.state_dict(), models_path + "Sarsa_Value_100000.pt")
-            torch.save(method.critic_optimizer.state_dict(), models_path + "Sarsa_Critic_optimizer_100000.pt")
-            torch.save(method.value_optimizer.state_dict(), models_path + "Sarsa_Value_optimizer_100000.pt")
-        
-    # torch.save(method.critic.state_dict(), models_path + "Sarsa_Critic.pt")
-    # torch.save(method.value.state_dict(), models_path + "Sarsa_Value.pt")
-    # torch.save(method.critic_optimizer.state_dict(), models_path + "Sarsa_Critic_optimizer.pt")
-    # torch.save(method.value_optimizer.state_dict(), models_path + "Sarsa_Value_optimizer.pt")
+
+        if log_step and t == 10 ** ((checkpoint_step + 1) * checkpoint_count):
+            method.save_checkpoints(cfg.checkpoint_path, t)
+        elif not log_step and t == (checkpoint_count + 1) * checkpoint_step:
+            method.save_checkpoints(cfg.checkpoint_path, t)
+
+    method.save_checkpoints(cfg.checkpoint_path)
+
+
+
+
+if __name__ == "__main__":
+    cfg = pyrallis.parse(TrainConfig)
+
+    wandb_init(cfg.wandb_config)
+    run(cfg=cfg)    
+    
     torch.cuda.empty_cache()
         
 
