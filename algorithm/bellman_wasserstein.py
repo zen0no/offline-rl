@@ -228,3 +228,26 @@ class BellmanWasserstein(object):
         log_dict["A-performance difference"] = (self.critic(state, action)[0] - self.value(state)).mean().item()
         
         return log_dict
+    
+
+    def save_checkpoints(self, checkpoint_path: str, timestep: int = -1):
+        assert os.path.exists(checkpoint_path)
+
+        checkp_name = str(timestep) if timestep != 0 else 'latest'
+        
+        critic_path = os.path.join(critic_path, f'Sarsa_Critic_{checkp_name}.pt')
+        value_path = os.path.join(value_path, f'Sarsa_Value_{checkp_name}.pt')
+
+        torch.save(self.critic.state_dict(), critic_path)
+        torch.save(self.value.state_dict(), value_path)
+
+    def save_optimizers(self, checkpont_path: str, timestep: int = -1 ):
+        assert os.path.exists(checkpont_path)
+
+        checkp_name = str(timestep) if timestep != 0 else 'latest'
+        
+        critic_path = os.path.join(critic_path, f'Sarsa_Critic_{checkp_name}.pt')
+        value_path = os.path.join(value_path, f'Sarsa_Value_{checkp_name}.pt')
+
+        torch.save(self.critic_optimizer.state_dict(), critic_path)
+        torch.save(self.value_optimizer.state_dict(), value_path)
