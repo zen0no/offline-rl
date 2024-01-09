@@ -80,8 +80,8 @@ def run(cfg: RunConfig):
 
 
     models_path = os.path.join(
-        cfg.run.checkpoint_path,
-        cfg.run.env
+        cfg.checkpoint_path,
+        cfg.env
         )
 
     if not os.path.exists(models_path):
@@ -94,13 +94,13 @@ def run(cfg: RunConfig):
     kwargs = {
         "state_dim": state_dim,
         "action_dim": action_dim,
-        "hidden_dim": cfg.run.hidden_dim,
-        "batch_size": cfg.run.batch_size,
+        "hidden_dim": cfg.hidden_dim,
+        "batch_size": cfg.batch_size,
         "max_action": max_action,
-        "max_steps": cfg.run.timesteps,
-        "discount": cfg.run.discount,
-        "tau": cfg.run.tau,
-        "alpha": cfg.run.alpha
+        "max_steps": cfg.timesteps,
+        "discount": cfg.discount,
+        "tau": cfg.tau,
+        "alpha": cfg.alpha
     }
 
     method = Distance.BellmanWasserstein(**kwargs)
