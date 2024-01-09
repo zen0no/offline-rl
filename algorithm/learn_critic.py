@@ -11,13 +11,14 @@ from config.base import WandbConfig
 from dataclasses import dataclass, field
 
 import pyrallis
+import uuid
 
 @dataclass
 class RunConfig:
     device: str = 'cuda'
     device_num: int = 1
 
-    task: str
+    task: str = 'SARSA-learn-critic'
     checkpoint_path: str = './checkpoint'
     env: str = 'halfcheetah-medium-expert-v2'
     seed: int = 0
@@ -44,6 +45,11 @@ class TrainConfig:
     run = field(default_factory=RunConfig)
     wandb_cfg = field(defailt_factroy=WandbConfig)
 
+    def __post_init__(self):
+        self.wandb_cfg.name = f"{self.run.task}-{self.run.env}-{str(uuid.uuid4())[:8]}"
+        if self.run.checkpoints_path is not None:
+            self.run.checkpoints_path = os.path.join(self.run.checkpoints_path, self.wandb_cfg.name)
+
 
 
 
@@ -61,8 +67,8 @@ def set_seed(seed):
 
 def wandb_init(cfg):
     wandb.init(
-        project=cfg.run.project,
-        name=f'{cfg.task}_{cfg.name}'
+        project=cfg.project,
+        name=cfg.name
     )
 
 
