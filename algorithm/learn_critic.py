@@ -128,8 +128,10 @@ def run(cfg: RunConfig):
 
         if log_step and t == 10 ** ((checkpoint_step + 1) * checkpoint_count):
             method.save_checkpoints(cfg.checkpoint_path, t)
+            checkpoint_count += 1
         elif not log_step and t == (checkpoint_count + 1) * checkpoint_step:
             method.save_checkpoints(cfg.checkpoint_path, t)
+            checkpoint_count += 1
 
     method.save_checkpoints(cfg.checkpoint_path)
     torch.cuda.empty_cache()
