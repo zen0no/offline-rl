@@ -132,6 +132,7 @@ def run(cfg: RunConfig):
             method.save_checkpoints(cfg.checkpoint_path, t)
 
     method.save_checkpoints(cfg.checkpoint_path)
+    torch.cuda.empty_cache()
 
 
 
@@ -140,8 +141,7 @@ if __name__ == "__main__":
     cfg = pyrallis.parse(TrainConfig)
 
     wandb_init(cfg.wandb_cfg)
-    run(cfg=cfg)    
+    run(cfg=cfg.run)    
     
-    torch.cuda.empty_cache()
         
 
