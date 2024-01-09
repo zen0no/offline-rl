@@ -2,61 +2,75 @@ import os
 import numpy as np
 import torch
 import gym
-import argparse
 import d4rl
 import d4rl.gym_mujoco
 import utils
 import bellman_wasserstein as Distance
 import wandb
+import uuid
 
-if __name__ == "__main__":
+import pyrallis
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--device_num", default="1")                # Cuda device
-    parser.add_argument("--task", default="-Q^R(s,pi(s))-l2)_10000-1f(s,a)_") 
-    parser.add_argument("--env", default="halfcheetah-medium-v2")   # OpenAI gym environment name
-    parser.add_argument("--seed", default=0, type=int)              # Sets Gym, PyTorch and Numpy seeds
-    parser.add_argument("--eval_freq", default=1000, type=int)     # How often (time steps) we evaluates
-    parser.add_argument("--timesteps", default=3001, type=int)   # Num of time steps to update
-    parser.add_argument("--distance_freq", default = 1e4, type=int)
+from config.base import WandbConfig
+from dataclasses import dataclass, field
 
-    parser.add_argument("--expl_noise", default=0.1)                # Std of Gaussian exploration noise
-    parser.add_argument("--batch_size", default=256, type=int)      # Batch size for both actor and critic
-    parser.add_argument("--hidden_dim", default=1024, type=int)     # Hidden layer size for both actor and critic
-    parser.add_argument("--discount", default=0.99)                 # Discount factor
-    parser.add_argument("--tau", default=0.005)                     # Target network update rate
-    parser.add_argument("--policy_noise", default=0.2)              # Noise added to target policy during critic update
-    parser.add_argument("--noise_clip", default=0.5)                # Range to clip target policy noise
-    parser.add_argument("--policy_freq", default=2, type=int)       # Frequency of delayed policy updates
+@dataclass
+class RunConfig:
+    device: str = 'cuda'
+    device_num: int = 1
 
-    parser.add_argument("--alpha", default=1)
-    parser.add_argument("--W", default=1)
-    parser.add_argument("--normalize", default=True)
-    args = parser.parse_args()
+    task: str
+    checkpoint_path: str = './checkpoint'
+    env: str = 'halfcheetah-medium-expert-v2'
+    seed: int = 0
+    eval_freq: int = 10000
+    timesteps: int = 1000000
 
-    seed = int(args.seed)
+    distance_freq: int = 10000    
     
-    wandb.init(project='Bellman-Wasserstein(ICLR)',
-        name=f"{args.task}_{args.env}",
-        entity='rock-and-roll',
-        reinit=True,
-    )
-    wandb.run.save()
-    
-    values = args.env.split("-")
-    if values[0]=='halfcheetah':
-        values = 'bullet-halfcheetah-random-v0'
-    else:
-        values = f"{values[0]}-random-v2"
+    expl_noise: float = 0.1
+    batch_size: int = 256
+    hidden_dim: int = 1024
+    discount: float = 0.99
+    tau: float = 0.005
+    policy_noise: float = 0.2
+    noise_clip: float = 0.5
+    policy_freq: int = 2
 
-    models_path = f"../../NeurIPS2023/OT_RL/TD3_BC/saved_models/{values}/"
+    alpha: float = 1.
+    W: float = 1.
 
-    env = gym.make(args.env)
-    env.seed(seed)
-    env.action_space.seed(seed)
+    normalize: bool = True
+
+@dataclass
+class TrainConfig:
+    run: RunConfig = field(default_factory=RunConfig)
+    wandb_cfg: WandbConfig = field(defailt_factroy=WandbConfig)
+
+    def __post_init__(self):
+        self.wandb_cfg.name = f"{self.run.task}_{str(uuid.uuid4())[:8]}"
+
+def make_env(cfg: RunConfig):
+    env = gym.make(cfg.env)
+    env.seed(cfg.seed)
+
+    return env
+
+
+def set_seed(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
+
+def wandb_init(cfg: WandbConfig):
+    wandb.init(
+        project=cfg.project,
+        name=cfg.name
+    )
+
+def run(cfg: RunConfig):
+    
+    env = make_env(cfg)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0] 
     max_action = float(env.action_space.high[0])
@@ -64,41 +78,47 @@ if __name__ == "__main__":
     kwargs = {
         "state_dim": state_dim,
         "action_dim": action_dim,
-        "hidden_dim": args.hidden_dim,
-        "batch_size": args.batch_size,
+        "hidden_dim": cfg.hidden_dim,
+        "batch_size": cfg.batch_size,
         "max_action": max_action,
-        "max_steps": args.timesteps,
-        "discount": args.discount,
-        "tau": args.tau,
-        "alpha": args.alpha,
-        "W": args.W
+        "max_steps": cfg.timesteps,
+        "discount": cfg.discount,
+        "tau": cfg.tau,
+        "alpha": cfg.alpha,
+        "W": cfg.W
     }
     
     method = Distance.BellmanWasserstein(**kwargs)
 
-    method.critic.load_state_dict(torch.load(models_path + "Sarsa_Critic_10000.pt"))
-    method.value.load_state_dict(torch.load(models_path + "Sarsa_Value_10000.pt"))
-    print("Models uploaded")
+    method.load(cfg.checkpoint_path)
 
     replay_buffer = utils.SarsaReplayBuffer(state_dim, action_dim, max_size=int(10000000))
     sarsa_dataset = utils.qlearning_dataset(env)
     replay_buffer.convert_D4RL(sarsa_dataset)
-    if args.normalize:
+    if cfg.normalize:
         mean,std = replay_buffer.normalize_states() 
     else:
         mean,std = 0,1
 
-    for t in range(int(args.timesteps)):
+    for t in range(int(cfg.timesteps)):
         log_dict = method.update_distance_cond_R(replay_buffer, advantage=True)
         wandb.log(log_dict, step=t)
         torch.cuda.empty_cache()
         
-        if t % args.eval_freq==0:
+        if t % cfg.eval_freq==0:
             log_dict = method.estimate_distance_cond_R(replay_buffer,advantage=True)
             wandb.log(log_dict, step=t)
     
-    #torch.save(method.potential_1.state_dict(), models_path + "-Q(s,rand(s)-l2)_10000-1f(s,a).pt")
-    #torch.save(method.potential_2.state_dict(), models_path + "-Q(s,rand(s)-l2)_10000-1f(s,a).pt")
     torch.cuda.empty_cache()
+
+
+if __name__ == "__main__":
+
+    cfg: TrainConfig = pyrallis(TrainConfig)
+
+    wandb_init(cfg.wandb_cfg)
+    run(cfg.run)  
+      
+
         
 
