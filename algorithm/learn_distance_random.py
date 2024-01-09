@@ -87,7 +87,8 @@ def run(cfg: RunConfig):
         "alpha": cfg.alpha,
         "W": cfg.W
     }
-    
+
+
     method = Distance.BellmanWasserstein(**kwargs)
 
     method.load(cfg.checkpoint_path)
