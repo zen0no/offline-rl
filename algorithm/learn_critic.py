@@ -119,7 +119,7 @@ def run(cfg: RunConfig):
     
     log_step = True
 
-    for t in range(int(run.timesteps) + 1):
+    for t in range(int(cfg.timesteps) + 1):
         log_dict = method.update_critic(replay_buffer)
         wandb.log(log_dict, step=t)
         log_dict = method.update_value(replay_buffer)
