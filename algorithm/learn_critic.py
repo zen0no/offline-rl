@@ -47,8 +47,8 @@ class TrainConfig:
 
     def __post_init__(self):
         self.wandb_cfg.name = f"{self.run.task}-{self.run.env}-{str(uuid.uuid4())[:8]}"
-        if self.run.checkpoints_path is not None:
-            self.run.checkpoints_path = os.path.join(self.run.checkpoints_path, self.wandb_cfg.name)
+        if self.run.checkpoint_path is not None:
+            self.run.checkpoint_path = os.path.join(self.run.checkpoint_path, self.wandb_cfg.name)
 
 
 
