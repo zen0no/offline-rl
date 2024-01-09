@@ -233,7 +233,7 @@ class BellmanWasserstein(object):
     def save_checkpoints(self, checkpoint_path: str, timestep: int = -1):
         assert os.path.exists(checkpoint_path)
 
-        checkp_name = str(timestep) if timestep != 0 else 'latest'
+        checkp_name = str(timestep) if timestep != -1 else 'latest'
         
         critic_path = os.path.join(checkpoint_path, f'Sarsa_Critic_{checkp_name}.pt')
         value_path = os.path.join(checkpoint_path, f'Sarsa_Value_{checkp_name}.pt')
@@ -244,10 +244,24 @@ class BellmanWasserstein(object):
     def save_optimizers(self, checkpoint_path: str, timestep: int = -1 ):
         assert os.path.exists(checkpoint_path)
 
-        checkp_name = str(timestep) if timestep != 0 else 'latest'
-        
+        checkp_name = str(timestep) if timestep != -1 else 'latest'
+
+
         critic_path = os.path.join(checkpoint_path, f'Sarsa_Critic_{checkp_name}.pt')
         value_path = os.path.join(checkpoint_path, f'Sarsa_Value_{checkp_name}.pt')
 
+        assert os.path.exists(critic_path) and os.path.exists(value_path)
+
         torch.save(self.critic_optimizer.state_dict(), critic_path)
         torch.save(self.value_optimizer.state_dict(), value_path)
+
+    def load(self, checkpoint_path: str, timestep: int = -1):
+
+        checkp_name = str(timestep) if timestep != -1 else 'latest'
+        assert os.path.exists(critic_path) and os.path.exists(value_path)
+        critic_path = os.path.join(checkpoint_path, f'Sarsa_Critic_{checkp_name}.pt')
+        value_path = os.path.join(checkpoint_path, f'Sarsa_Value_{checkp_name}.pt')
+        
+        self.critic.load_state_dict(torch.load(critic_path))
+        self.value.load_state_dict(torch.load(value_path))
+        print("Models uploaded")
