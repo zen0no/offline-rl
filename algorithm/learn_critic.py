@@ -139,7 +139,7 @@ def run(cfg: RunConfig):
 if __name__ == "__main__":
     cfg = pyrallis.parse(TrainConfig)
 
-    wandb_init(cfg.wandb_config)
+    wandb_init(cfg.wandb_cfg)
     run(cfg=cfg)    
     
     torch.cuda.empty_cache()
