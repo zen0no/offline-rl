@@ -66,6 +66,7 @@ def set_seed(seed):
 def wandb_init(cfg: WandbConfig):
     wandb.init(
         project=cfg.project,
+        group=cfg.group,
         name=cfg.name
     )
 
