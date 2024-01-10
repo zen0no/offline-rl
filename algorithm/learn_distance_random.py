@@ -115,7 +115,7 @@ def run(cfg: RunConfig):
 
 if __name__ == "__main__":
 
-    cfg: TrainConfig = pyrallis(TrainConfig)
+    cfg: TrainConfig = pyrallis.parse(TrainConfig)
 
     wandb_init(cfg.wandb_cfg)
     run(cfg.run)  
