@@ -6,3 +6,4 @@ from dataclasses import dataclass, field
 class WandbConfig:
     project: str = 'Bellman-Wasserstein-distance(ICLR)'
     name: str = 'project_name'
+    group: str = 'group_name'

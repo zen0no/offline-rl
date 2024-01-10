@@ -48,7 +48,8 @@ class TrainConfig:
     wandb_cfg: WandbConfig = field(default_factory=WandbConfig)
 
     def __post_init__(self):
-        self.wandb_cfg.name = f"{self.run.task}_{str(uuid.uuid4())[:8]}"
+        self.wandb_cfg.group = self.run.task
+        self.wandb_cfg.name = f"{self.run.env}_{str(uuid.uuid4())[:8]}"
 
 def make_env(cfg: RunConfig):
     env = gym.make(cfg.env)
