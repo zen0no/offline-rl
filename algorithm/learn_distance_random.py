@@ -45,7 +45,7 @@ class RunConfig:
 @dataclass
 class TrainConfig:
     run: RunConfig = field(default_factory=RunConfig)
-    wandb_cfg: WandbConfig = field(defailt_factroy=WandbConfig)
+    wandb_cfg: WandbConfig = field(default_factory=WandbConfig)
 
     def __post_init__(self):
         self.wandb_cfg.name = f"{self.run.task}_{str(uuid.uuid4())[:8]}"
