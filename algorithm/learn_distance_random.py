@@ -19,7 +19,7 @@ class RunConfig:
     device: str = 'cuda'
     device_num: int = 1
 
-    task: str
+    task: str = 'Learn-random-BWD'
     checkpoint_path: str = './checkpoint'
     env: str = 'halfcheetah-medium-expert-v2'
     seed: int = 0
