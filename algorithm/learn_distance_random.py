@@ -11,7 +11,6 @@ import uuid
 
 import pyrallis
 
-from config.base import WandbConfig
 from dataclasses import dataclass, field
 
 @dataclass
@@ -42,14 +41,15 @@ class RunConfig:
 
     normalize: bool = True
 
-@dataclass
-class TrainConfig:
-    run: RunConfig = field(default_factory=RunConfig)
-    wandb_cfg: WandbConfig = field(default_factory=WandbConfig)
+    #Wandb
+    project: str = 'Bellman-Wasserstein-distance(ICLR)'
+    name: str = 'project_name'
+    group: str = 'Learn-random-BWD'
 
     def __post_init__(self):
-        self.wandb_cfg.group = self.run.task
-        self.wandb_cfg.name = f"{self.run.env}_{str(uuid.uuid4())[:8]}"
+        self.name = f"{self.env}_{str(uuid.uuid4())[:8]}"
+
+
 
 def make_env(cfg: RunConfig):
     env = gym.make(cfg.env)
@@ -63,7 +63,7 @@ def set_seed(seed):
     np.random.seed(seed)
 
 
-def wandb_init(cfg: WandbConfig):
+def wandb_init(cfg: RunConfig):
     wandb.init(
         project=cfg.project,
         group=cfg.group,
@@ -117,7 +117,7 @@ def run(cfg: RunConfig):
 
 if __name__ == "__main__":
 
-    cfg: TrainConfig = pyrallis.parse(TrainConfig)
+    cfg: RunConfig = pyrallis.parse(RunConfig)
 
     wandb_init(cfg.wandb_cfg)
     run(cfg.run)  
