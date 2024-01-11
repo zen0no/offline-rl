@@ -119,8 +119,8 @@ if __name__ == "__main__":
 
     cfg: RunConfig = pyrallis.parse(RunConfig)
 
-    wandb_init(cfg.wandb_cfg)
-    run(cfg.run)  
+    wandb_init(cfg)
+    run(cfg)  
       
 
         
