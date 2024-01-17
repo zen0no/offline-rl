@@ -48,7 +48,7 @@ class TrainConfig:
     def __post_init__(self):
         self.name = f"{self.task}_{self.env}"
         if self.checkpoint_path is not None:
-            self.checkpoint_path = os.path.join(self.run.checkpoint_path, self.env)
+            self.checkpoint_path = os.path.join(self.checkpoint_path, self.env)
 
 
 
