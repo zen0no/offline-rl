@@ -11,10 +11,9 @@ from config.base import WandbConfig
 from dataclasses import dataclass, field
 
 import pyrallis
-import uuid
 
 @dataclass
-class RunConfig:
+class TrainConfig:
     device: str = 'cuda'
     device_num: int = 1
 
@@ -40,20 +39,21 @@ class RunConfig:
 
     normalize: bool = True
 
-@dataclass
-class TrainConfig:
-    run: RunConfig = field(default_factory=RunConfig)
-    wandb_cfg: WandbConfig = field(default_factory=WandbConfig)
+
+    #Wandb
+    project: str = 'Bellman-Wasserstein-distance(ICLR)'
+    name: str = 'project_name'
+    group: str = 'Learn-random-BWD'
 
     def __post_init__(self):
-        self.wandb_cfg.name = f"{self.run.task}-{self.run.env}-{str(uuid.uuid4())[:8]}"
-        if self.run.checkpoint_path is not None:
-            self.run.checkpoint_path = os.path.join(self.run.checkpoint_path, self.wandb_cfg.name)
+        self.name = f"{self.task}_{self.env}"
+        if self.checkpoint_path is not None:
+            self.checkpoint_path = os.path.join(self.run.checkpoint_path, self.env)
 
 
 
 
-def make_env(cfg: RunConfig):
+def make_env(cfg: TrainConfig):
     env = gym.make(cfg.env)
     env.seed(cfg.seed)
 
@@ -72,7 +72,7 @@ def wandb_init(cfg):
     )
 
 
-def run(cfg: RunConfig): 
+def run(cfg: TrainConfig): 
 
     env = make_env(cfg)
     set_seed(cfg.seed)
@@ -117,7 +117,6 @@ def run(cfg: RunConfig):
     checkpoint_count = 0
     checkpoint_step = 2
     
-    log_step = True
 
     for t in range(int(cfg.timesteps) + 1):
         log_dict = method.update_critic(replay_buffer)
@@ -126,10 +125,7 @@ def run(cfg: RunConfig):
         wandb.log(log_dict, step=t)
         torch.cuda.empty_cache()
 
-        if log_step and t == 10 ** ((checkpoint_step + 1) * checkpoint_count):
-            method.save_checkpoints(cfg.checkpoint_path, t)
-            checkpoint_count += 1
-        elif not log_step and t == (checkpoint_count + 1) * checkpoint_step:
+        if t in [1000, 10000, 20000, 50000, 100000, 500000, 1000000]:
             method.save_checkpoints(cfg.checkpoint_path, t)
             checkpoint_count += 1
 
@@ -142,8 +138,8 @@ def run(cfg: RunConfig):
 if __name__ == "__main__":
     cfg = pyrallis.parse(TrainConfig)
 
-    wandb_init(cfg.wandb_cfg)
-    run(cfg=cfg.run)    
+    wandb_init(cfg)
+    run(cfg=cfg)    
     
         
 
