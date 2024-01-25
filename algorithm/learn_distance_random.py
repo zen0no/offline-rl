@@ -2,8 +2,7 @@ import os
 import numpy as np
 import torch
 import gym
-import d4rl
-import d4rl.gym_mujoco
+
 import utils
 import bellman_wasserstein as Distance
 import wandb
@@ -20,11 +19,11 @@ class RunConfig:
 
     task: str = 'Learn-random-BWD'
     checkpoint_path: str = './checkpoint'
-    checkpoint_timestep: int = 1000
     env: str = 'halfcheetah-medium-expert-v2'
     seed: int = 0
     eval_freq: int = 10000
     timesteps: int = 1000000
+    checkpoint_timestep: int = 1000
 
     distance_freq: int = 10000    
     
