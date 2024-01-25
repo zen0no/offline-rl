@@ -20,6 +20,7 @@ class RunConfig:
 
     task: str = 'Learn-random-BWD'
     checkpoint_path: str = './checkpoint'
+    checkpoint_timestep: int = 1000
     env: str = 'halfcheetah-medium-expert-v2'
     seed: int = 0
     eval_freq: int = 10000
@@ -47,7 +48,10 @@ class RunConfig:
     group: str = 'Learn-random-BWD'
 
     def __post_init__(self):
-        self.name = f"{self.env}_{str(uuid.uuid4())[:8]}"
+        self.name = f"{self.task}_{self.env}_{self.checkpoint_timestep}"
+        if self.checkpoint_path is not None:
+            self.checkpoint_path = os.path.join(self.checkpoint_path, self.env)
+
 
 
 
@@ -93,7 +97,7 @@ def run(cfg: RunConfig):
 
     method = Distance.BellmanWasserstein(**kwargs)
 
-    method.load(cfg.checkpoint_path)
+    method.load(cfg.checkpoint_path, timestep=cfg.checkpoint_timestep)
 
     replay_buffer = utils.SarsaReplayBuffer(state_dim, action_dim, max_size=int(10000000))
     sarsa_dataset = utils.qlearning_dataset(env)
