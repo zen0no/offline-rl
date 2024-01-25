@@ -6,6 +6,7 @@ import gym
 import utils
 import bellman_wasserstein as Distance
 import wandb
+import d4rl
 import uuid
 
 import pyrallis
