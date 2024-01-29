@@ -23,7 +23,7 @@ locomotion=(
 
 for env in ${locomotion[*]}
 do
-    python learn_critic.py \
+    python algorithm/learn_critic.py \
     --env $env\
     --seed $"0"\
     --checkpoint_path $path
