@@ -7,7 +7,6 @@ import utils
 import bellman_wasserstein as Distance
 import wandb
 
-from config.base import WandbConfig
 from dataclasses import dataclass, field
 
 import pyrallis
