@@ -1,15 +1,15 @@
 #!/bin/bash
 
-path=''
-
-
-while getopts 'f:' flag; do
+PATH=""
+ENV_NAME=""
+ 
+while getopts ":f:e:" flag; do
   case "${flag}" in
-    f) path="${OPTARG}" ;;
+    f) PATH="${OPTARG}" ;;
+    e) ENV_NAME="${OPTARG}" ;;
     *) echo "1" ;;
   esac
 done
-
 
 
 locomotion=(
@@ -21,10 +21,11 @@ locomotion=(
 )
  
 
-for env in ${locomotion[*]}
+for env_type in ${locomotion[*]}
 do
-    python algorithm/learn_critic.py \
-    --env $env\
+    ENV="${ENV_NAME}"-"${env_type}"
+    python3 src/algorithm/learn_critic.py \
+    --env $ENV\
     --seed $"0"\
     --checkpoint_path $path
 done&
