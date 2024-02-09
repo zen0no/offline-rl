@@ -3,7 +3,7 @@
 
 while getopts ":f:e:" flag; do
   case "${flag}" in
-    f) PATH="${OPTARG}" ;;
+    f) CHECKPOINT_PATH="${OPTARG}" ;;
     e) ENV_NAME="${OPTARG}" ;;
     *) echo "1" ;;
   esac
@@ -26,5 +26,5 @@ do
     python3 src/algorithm/learn_critic.py \
     --env $ENV\
     --seed $"0"\
-    --checkpoint_path $PATH
+    --checkpoint_path $CHECKPOINT_PATH
 done&
