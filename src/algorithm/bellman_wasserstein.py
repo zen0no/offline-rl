@@ -9,8 +9,6 @@ from networks import GaussActor, Actor, Critic, Value, Potential, PotentialCond
 from utils import log_prob_func, NegAbs, SampledValueBaseline
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-device = 'cuda'
-
 class BellmanWasserstein(object):
     def __init__(
         self,
@@ -30,6 +28,7 @@ class BellmanWasserstein(object):
         policy_freq=2,
         alpha=2.5,
         W = 1,
+        device='cpu',
     ):
         
         #self.beta = GaussActor(state_dim, hidden_dim, action_dim).to(device)
@@ -183,7 +182,7 @@ class BellmanWasserstein(object):
         log_dict["Q mean"] = self.critic(state, action)[0].mean().item()
         log_dict["A mean"] = (self.critic(state, action)[0] - self.value(state)).mean().item()
         log_dict["A-performance difference"] = (self.critic(state, random_action)[0] - self.value(state)).mean().item()
-        
+            
         return log_dict
     
     

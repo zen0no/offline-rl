@@ -46,12 +46,13 @@ class TrainConfig:
 
     def __post_init__(self):
         self.name = f"{self.task}_{self.env}"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.checkpoint_path is not None:
             self.checkpoint_path = os.path.join(self.checkpoint_path, self.env)
 
 
 
-
+    
 def make_env(cfg: TrainConfig):
     env = gym.make(cfg.env)
     env.seed(cfg.seed)
@@ -99,7 +100,8 @@ def run(cfg: TrainConfig):
         "max_steps": cfg.timesteps,
         "discount": cfg.discount,
         "tau": cfg.tau,
-        "alpha": cfg.alpha
+        "alpha": cfg.alpha,
+        "device": cfg.device
     }
 
     method = Distance.BellmanWasserstein(**kwargs)
